@@ -1,0 +1,32 @@
+type Query {
+  commodityMaxPrices(commodity_id: Int!, days: Int!): [CommodityPrice!]
+  commodityPrices(commodity_id: Int!, timestamp: Int, limit: Int = 10): [CommodityPrice!]
+
+  markets(limit: Int = 10): [Market!]!
+  market(id:Int!): Market!
+
+  commodities(limit: Int = 10): [Commodity!]!
+  commodity(id: Int!): Commodity!
+}
+
+type CommodityPrice {
+    price: Int!
+    demand: Int!
+    date: Int!
+    commodity: Commodity!
+    market: Market!
+}
+
+type Commodity {
+    id: ID!
+    name: String!
+    inaraLink: String
+}
+
+type Market {
+    id: ID!
+    system: String!
+    station: String!
+    solDistance: Float
+    borannDistance: Float
+}

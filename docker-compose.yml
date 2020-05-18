@@ -1,0 +1,23 @@
+version: '3.3'
+services:
+  updater:
+    volumes:
+      - './data:/usr/src/app/data'
+    image: 'ed-updater:latest'
+    build: ./updater
+    environment:
+      - DB_PATH=sqlite:///data/updater.db
+
+
+  server:
+    volumes:
+      - './data:/usr/src/app/data'
+    image: 'ed-server:latest'
+    build: ./server
+    environment:
+      - DB_PATH=sqlite:///data/updater.db
+      - MAPPING_PATH=data/inara_commodities_map.csv
+    ports: 
+      - "3003:4000"
+
+

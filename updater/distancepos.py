@@ -1,0 +1,1 @@
+URL = "https://www.edsm.net/api-v1/systems?systemName[]=Sol&systemName[]=Borann&systemName[]=Areklici&showCoordinates=1&onlyKnownCoordinates=1"
