@@ -70,44 +70,58 @@ def save_commodities(data, session):
     for commodity in data['message']['commodities']:
         name = commodity['name'].lower()
 
-        if name in commodities_mapping:
-            commodity_id = commodities_mapping[name]
+        if name not in commodities_mapping:
+            continue
 
-            price = commodity['sellPrice']
-            mean = commodity['meanPrice']
+        commodity_id = commodities_mapping[name]
 
-            if price > mean:
+        price = commodity['sellPrice']
+        mean = commodity['meanPrice']
 
-                demand = commodity['demand']
+        if price <= mean:
+            continue
 
-                entry = session.query(CommodityMaxPrice).filter_by(commodity_id=commodity_id, timestamp=loop_ts, market_id=market).first()
+        demand = commodity['demand']
 
-                if entry is None:
-                    
-                    market_entry = session.query(Market).filter_by(id=market).first()
+        entry = session.query(CommodityMaxPrice).filter_by(commodity_id=commodity_id, timestamp=loop_ts, market_id=market).first()
 
-                    if market_entry is None:
-                        new_market = Market(id=market, system=system, station=station)
-                        session.add(new_market)
+        if entry is None:
+            
+            market_entry = session.query(Market).filter_by(id=market).first()
 
-                    new_commodity = CommodityMaxPrice(commodity_id=commodity_id, sell_price=price, sell_demand=demand, timestamp=loop_ts, updated=ts, market_id=market)
-                    session.add(new_commodity)
+            if market_entry is None:
+                new_market = Market(id=market, system=system, station=station)
+                session.add(new_market)
 
-                else:
-                    if entry.market is None:
-                        session.add(Market(id=market, system=system, station=station))
+            new_commodity = CommodityMaxPrice(commodity_id=commodity_id, sell_price=price, sell_demand=demand, timestamp=loop_ts, updated=ts, market_id=market)
+            session.add(new_commodity)
 
-                    if price > entry.sell_price:
-                        entry.sell_price = price
-                    
-                    if price == entry.sell_price and demand > entry.sell_demand:
-                        entry.sell_demand = demand
-                    
-                    if price >= entry.sell_price or demand == entry.sell_demand:
-                        entry.updated=ts
+        else:
+            if entry.market is None:
+                session.add(Market(id=market, system=system, station=station))
 
-                    session.merge(entry)
+            if price > entry.sell_price:
+                entry.sell_price = price
+            
+            if price == entry.sell_price and demand > entry.sell_demand:
+                entry.sell_demand = demand
+            
+            if price >= entry.sell_price or demand == entry.sell_demand:
+                entry.updated=ts
 
+            session.merge(entry)
+
+
+def parse_msg(session_factory, data):
+    schemaRef = data['$schemaRef']
+    if schemaRef.startswith('https://eddn.edcd.io/schemas/commodity/'):
+        if schemaRef[-1] == '3':
+            session = session_factory()
+            save_commodities(data, session)
+            session.commit()
+
+        else:
+            print('Unknown version: %s' % schemaRef);
 
 
 def main():
@@ -119,7 +133,7 @@ def main():
 
     engine = create_engine(os.environ.get('DB_PATH'), echo=True)
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
+    session_factory = sessionmaker(bind=engine)
 
     while True:
         try:
@@ -135,14 +149,7 @@ def main():
                 message = zlib.decompress(raw_message)
                 data = json.loads(message)
                 
-                if data['$schemaRef'].startswith('https://eddn.edcd.io/schemas/commodity/'):
-                    if data['$schemaRef'][-1] == '3':
-                        session = Session()
-                        save_commodities(data, session)
-                        session.commit()
-
-                    else:
-                        print('Unknown version: ' + data['$schemaRef']);
+                parse_msg(session_factory, data)
 
 
         except zmq.ZMQError as e:
