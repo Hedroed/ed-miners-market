@@ -7,12 +7,12 @@
 </template>
 
 <script>
-import LineChart from './Chart.vue'
+import moment from 'moment'
 
 export default {
     name: 'Stocks',
     components: {
-        LineChart
+        LineChart: () => import('./Chart.vue')
     },
     props: {
         stocks: {
@@ -42,7 +42,8 @@ export default {
                             display: true,
                             type: 'time',
                             time: {
-                                tooltipFormat: 'LL'
+                                tooltipFormat: 'LL',
+                                unit: 'day'
                             },
                             scaleLabel: {
                                 display: false,
@@ -89,25 +90,14 @@ export default {
             if (this.stocks.length == 0) {
                 return { labels: [], datasets: [] }
             }
+            const past31days = moment().subtract(31, 'days');
 
-            let l = this.stocks.length
-            let d = 24 * 3600
-            let first_ts = this.stocks[0].date
-            let first_price = this.stocks[0].price
-            let first_demand = this.stocks[0].demand
-
-            let random_data = Array.from({
-                length: Math.max(0, this.days - l)
-            }).map((_, i) => ({
-                price: Math.floor(Math.random() * first_price/2) + first_price*0.1,
-                demand: Math.floor(Math.random() * first_demand/2) + first_demand*0.1,
-                date: first_ts - (i + 1) * d
-            }))
-
-            let all_data = this.stocks.concat(random_data).sort((a,b) => a.date<b.date)
+            const all_data = this.stocks
+                .map(d => ({...d, date: moment(d.date * 1000)}))
+                .filter(d => d.date.isAfter(past31days))
 
             return {
-                labels: all_data.map(d => new Date(d.date * 1000)),
+                labels: all_data.map(d => d.date),
                 datasets: [
                     {
                         fill: false,
@@ -132,7 +122,5 @@ export default {
 </script>
 
 <style scoped>
-/* .chart {
-    width: 1000px;
-} */
+
 </style>

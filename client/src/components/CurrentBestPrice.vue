@@ -4,15 +4,15 @@
         <div class="ui attached segment">
             <div class="ui small statistic">
                 <div class="value">
-                    <i class="small dollar sign icon"></i> {{ price.price | number('0,0') }}
+                    <i class="small dollar sign icon" aria-hidden="true"></i> {{ prettyNumber(price.price) }}
                 </div>
                 <div class="label">Best Price</div>
             </div>
         </div>
         <div class="ui attached segment">
-            <div class="ui small statistic">
+            <div :class="demandClasses()">
                 <div class="value">
-                    <i class="small dolly icon"></i> {{ price.demand | number('0,0') }}
+                    <i class="small dolly icon" aria-hidden="true"></i> {{ prettyNumber(price.demand) }}
                 </div>
                 <div class="label">Demand</div>
             </div>
@@ -20,18 +20,13 @@
         <div class="ui attached segment">
             <h4>System / Station</h4>
             <div class="ui vertical orange buttons">
-                <button class="ui button" v-clipboard:copy="price.market.system"><i class="copy icon"></i>{{ price.market.system }}</button>
-                <button class="ui disabled button">{{ price.market.station }}</button>
+                <button aria-label="Copy System name" class="ui button" v-clipboard:copy="price.market.system"><i class="copy icon" aria-hidden="true"></i>{{ price.market.system }}</button>
+                <button aria-label="Station name" class="ui disabled button">{{ price.market.station }}</button>
             </div>
-            <!-- <a class="ui teal image large label" v-clipboard:copy="price.market.system">
-                <i class="copy icon"></i>
-                {{ price.market.system }}
-                <div class="detail">{{ price.market.station }}</div>
-            </a> -->
         </div>
         <div class="ui bottom attached segment">
-            <a class="ui orange basic button" target="_blank" :href="price.commodity.inaraLink">
-                <i class="external alternate icon"></i>
+            <a class="ui orange basic button" target="_blank" rel="noopener noreferrer" :href="price.commodity.inaraLink">
+                <i class="external alternate icon" aria-hidden="true"></i>
                 Inara page
             </a>
         </div>
@@ -49,8 +44,8 @@ export default {
                     price: 0,
                     demand: 0,
                     market: {
-                        system: '',
-                        station: ''
+                        system: '---',
+                        station: '---'
                     },
                     commodity: {
                         inaraLink: ''
@@ -59,6 +54,20 @@ export default {
             }
         }
     },
+    methods: {
+        demandClasses() {
+            let classes = ['ui', 'small', 'statistic']
+            if (this.price.demand == 0) return classes
+            let color = undefined
+            if (this.price.demand <= 200) color = 'red'
+            else if (this.price.demand <= 1000) color = 'orange'
+            return [ ...classes, color ]
+        },
+        prettyNumber(n) {
+            if (n) return Math.floor(n).toLocaleString()
+            else return '0'
+        }
+    }
 }
 </script>
 
