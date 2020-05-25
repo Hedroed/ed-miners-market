@@ -17,14 +17,10 @@ def run() -> None:
         engine_sdl=os.path.dirname(os.path.abspath(__file__)) + "/sdl",
         engine_modules=[
             "server.query_resolvers",
-            # "server.mutation_resolvers",
-            # "server.subscription_resolvers",
-            # "server.directives.rate_limiting",
-            # "server.directives.auth",
         ],
         executor_http_endpoint="/graphql/",
         executor_http_methods=["POST"],
-        graphiql_enabled=True,
+        graphiql_enabled=False,
     )
 
     # `aiohttp_cors.setup` returns `aiohttp_cors.CorsConfig` instance.
@@ -43,7 +39,7 @@ def run() -> None:
     for route in list(app.router.routes()):
         cors.add(route)
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     web.run_app(
         app,

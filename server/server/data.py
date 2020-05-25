@@ -10,6 +10,8 @@ from sqlalchemy.sql import func
 ONE_DAY_SECOND = 24 * 60 * 60
 PRE_LOOP_SECOND = 15 * 60 * 60
 
+INARA_URL = "https://inara.cz/galaxy-commodity/%d"
+
 def get_loop_timestamp(timestamp):
     shifted_ts = timestamp - PRE_LOOP_SECOND
     time_in_day = shifted_ts % ONE_DAY_SECOND
@@ -41,12 +43,12 @@ class DataManager():
         self.engine = create_engine(db_path, echo=False)
         Base.metadata.create_all(self.engine)
 
-        self.Session = sessionmaker(bind=self.engine)
+        self.session_factory = sessionmaker(bind=self.engine)
 
         self.mapping = CommodityMapping(path=mapping_path)
 
     def get_session(self):
-        return self.Session()
+        return self.session_factory()
 
 
     def get_commodity_prices(self, commodity_id, timestamp=None, limit=10):
@@ -74,8 +76,6 @@ class DataManager():
 
         last_updated = session.query(CommodityMaxPrice.commodity_id, CommodityMaxPrice.market_id, func.max(CommodityMaxPrice.timestamp).label("max_timestamp")).filter(CommodityMaxPrice.commodity_id==commodity_id, CommodityMaxPrice.timestamp>from_ts, CommodityMaxPrice.timestamp<=to_ts).group_by(CommodityMaxPrice.commodity_id, CommodityMaxPrice.market_id).subquery()
         
-        # last_commodities_updated = aliased(CommodityMaxPrice, last_updated)
-
         res = session.query(CommodityMaxPrice).join(last_updated,and_(CommodityMaxPrice.commodity_id==last_updated.c.commodity_id, CommodityMaxPrice.market_id==last_updated.c.market_id, CommodityMaxPrice.timestamp==last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
 
         return [
@@ -86,7 +86,7 @@ class DataManager():
                 "commodity": {
                     "id": p.commodity_id,
                     "name": self.mapping.to_name_safe(p.commodity_id),
-                    "inaraLink": "https://inara.cz/galaxy-commodity/%d" % p.commodity_id
+                    "inaraLink": INARA_URL % p.commodity_id
                 },
                 "market": {
                     "id": p.market.id,
@@ -138,7 +138,7 @@ class DataManager():
                 "commodity": {
                     "id": p.commodity_id,
                     "name": self.mapping.to_name_safe(p.commodity_id),
-                    "inaraLink": "https://inara.cz/galaxy-commodity/%d" % p.commodity_id
+                    "inaraLink": INARA_URL % p.commodity_id
                 },
                 "market": {
                     "id": p.market.id,
@@ -163,7 +163,7 @@ class DataManager():
             {
                 "id": id_,
                 "name": name,
-                "inaraLink": "https://inara.cz/galaxy-commodity/%d" % id_
+                "inaraLink": INARA_URL % id_
             } for id_, name in self.mapping.mapping_to_name.items()
         ]
     
@@ -172,5 +172,5 @@ class DataManager():
         return {
             "id": id_,
             "name": name,
-            "inaraLink": "https://inara.cz/galaxy-commodity/%d" % id_
+            "inaraLink": INARA_URL % id_
         }
