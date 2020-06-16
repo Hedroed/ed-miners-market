@@ -5,7 +5,7 @@ from tartiflette import Resolver, TypeResolver
 from .data import DataManager
 
 
-manager = DataManager(os.environ.get('DB_PATH'), os.environ.get('MAPPING_PATH'))
+manager = DataManager(os.environ.get('DB_PATH'), './inara_commodities_map.csv')
 
 
 @Resolver("Query.commodityMaxPrices")
@@ -74,7 +74,7 @@ async def resolve_query_prices(
     :return: a recipe
     :rtype: Optional[Dict[str, Any]]
     """
-    return manager.get_makets(args["limit"])
+    return manager.get_markets(args["limit"])
 
 @Resolver("Query.market")
 async def resolve_query_prices(
@@ -96,7 +96,7 @@ async def resolve_query_prices(
     :return: a recipe
     :rtype: Optional[Dict[str, Any]]
     """
-    return manager.get_maket(args["id"])
+    return manager.get_market(args["id"])
 
 
 @Resolver("Query.commodities")

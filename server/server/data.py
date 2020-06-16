@@ -8,7 +8,7 @@ from sqlalchemy.sql import func
 
 
 ONE_DAY_SECOND = 24 * 60 * 60
-PRE_LOOP_SECOND = 15 * 60 * 60
+PRE_LOOP_SECOND = 10 * 60 * 60
 
 INARA_URL = "https://inara.cz/galaxy-commodity/%d"
 
@@ -20,7 +20,7 @@ def get_loop_timestamp(timestamp):
 
 class CommodityMapping():
 
-    def __init__(self, path='./inara_commodities_map.csv'):
+    def __init__(self, path):
 
         self.mapping_to_name = {}
         self.mapping_to_id = {}
@@ -148,12 +148,12 @@ class DataManager():
             } for p in res
         ]
 
-    def get_makets(self, limit=10):
+    def get_markets(self, limit=10):
         session = self.get_session()
 
         return session.query(Market).limit(limit).all()
     
-    def get_maket(self, id_):
+    def get_market(self, id_):
         session = self.get_session()
 
         return session.query(Market).filter_by(id=id_).first()

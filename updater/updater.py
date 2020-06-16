@@ -6,15 +6,18 @@ import time
 import dateutil.parser
 import csv
 import os
+import logging
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
 from model import Base, Market, CommodityMaxPrice
 
+logging.basicConfig(level=logging.INFO)
 
-ONE_DAY_SECOND = 24 * 60 * 60
-PRE_LOOP_SECOND = 14 * 60 * 60
+
+ONE_DAY_SECOND = 24 * 3600
+PRE_LOOP_SECOND = 14 * 3600
 
 EDDN_RELAY = 'tcp://eddn.edcd.io:9500'
 EDDN_TIMEOUT = 600000 # 5 min
@@ -22,30 +25,44 @@ EDDN_TIMEOUT = 600000 # 5 min
 
 #### KNOWN SOFTWARES: ####
 #
-# "E:D Market Connector"
-# "EDDiscovery"
-# "EDDI"
-# "EDCE"
-# "ED-TD.SPACE"
-# "EliteOCR"
-# "Maddavo's Market Share"
-# "RegulatedNoise"
-# "RegulatedNoise__DJ"
+# E:D Market Connector [Linux]
+# E:D Market Connector [Windows]
+# EDAOS
+# EDDI
+# EDDiscovery
+# EDSM
+# EDSM - Console
+# EVA [Android]
+# EVA [iPad]
+# EVA [iPhone]
+# Elite G19s Companion App
+# EliteLogAgent
+# GameGlass
+# Moonlight
 
-
-# Used this to excludes yourself for example has you don't want to handle your own messages ^^
-EXCLUDED_SOFTWARES = []
+AUTHORISED_SOFTWARES = [
+    "E:D Market Connector [Windows]",
+    "EDDiscovery",
+    "EDDI",
+    "EliteLogAgent",
+    "EDSM - Console",
+    "E:D Market Connector [Linux]",
+]
 
 
 def get_loop_timestamp(timestamp):
-    shifted_ts = timestamp - PRE_LOOP_SECOND
-    time_in_day = shifted_ts % ONE_DAY_SECOND
+    hour_shift = timestamp % 3600
+    return True, timestamp - hour_shift
 
-    return time_in_day >= 3600, shifted_ts - time_in_day
+# def get_loop_timestamp(timestamp):
+#     shifted_ts = timestamp - PRE_LOOP_SECOND
+#     time_in_day = shifted_ts % ONE_DAY_SECOND
+
+#     return time_in_day >= 3600, shifted_ts - time_in_day
 
 
 commodities_mapping = {}
-with open('data/inara_commodities_map.csv') as f:
+with open('./inara_commodities_map.csv') as f:
     reader = csv.DictReader(f)
     for row in reader:
         commodities_mapping[row['commodity_name']] = int(row['commodity_id'])
@@ -53,8 +70,8 @@ with open('data/inara_commodities_map.csv') as f:
 
 def save_commodities(data, session):
 
-    excluded = data['header']['softwareName'] in EXCLUDED_SOFTWARES
-    if excluded:
+    authorised = data['header']['softwareName'] in AUTHORISED_SOFTWARES
+    if not authorised:
         return
 
     ts = int(dateutil.parser.isoparse(data['message']['timestamp']).timestamp())
@@ -95,6 +112,7 @@ def save_commodities(data, session):
 
             new_commodity = CommodityMaxPrice(commodity_id=commodity_id, sell_price=price, sell_demand=demand, timestamp=loop_ts, updated=ts, market_id=market)
             session.add(new_commodity)
+            logging.info("New entry: %s", new_commodity)
 
         else:
             if entry.market is None:
@@ -106,22 +124,23 @@ def save_commodities(data, session):
             if price == entry.sell_price and demand > entry.sell_demand:
                 entry.sell_demand = demand
             
-            if price >= entry.sell_price or demand == entry.sell_demand:
+            if price == entry.sell_price or demand == entry.sell_demand:
                 entry.updated=ts
+                logging.info("Update entry: %s", entry)
 
             session.merge(entry)
 
 
 def parse_msg(session_factory, data):
-    schemaRef = data['$schemaRef']
-    if schemaRef.startswith('https://eddn.edcd.io/schemas/commodity/'):
-        if schemaRef[-1] == '3':
+    schema_ref = data['$schemaRef']
+    if schema_ref.startswith('https://eddn.edcd.io/schemas/commodity/'):
+        if schema_ref[-1] == '3':
             session = session_factory()
             save_commodities(data, session)
             session.commit()
 
         else:
-            print('Unknown version: %s' % schemaRef);
+            logging.warning('Unknown version: %s', schema_ref);
 
 
 def main():
@@ -131,7 +150,7 @@ def main():
     subscriber.setsockopt(zmq.SUBSCRIBE, b"")
     subscriber.setsockopt(zmq.RCVTIMEO, EDDN_TIMEOUT)
 
-    engine = create_engine(os.environ.get('DB_PATH'), echo=True)
+    engine = create_engine(os.environ.get('DB_PATH'), echo=False)
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
 
@@ -153,7 +172,7 @@ def main():
 
 
         except zmq.ZMQError as e:
-            print('ZMQSocketException: %s' % e)
+            logging.warning('ZMQSocketException: %s' % e)
             subscriber.disconnect(EDDN_RELAY)
             time.sleep(5)
 

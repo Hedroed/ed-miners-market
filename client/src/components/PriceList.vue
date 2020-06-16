@@ -4,36 +4,38 @@
         <div class="responsive">
             <table
                 class="prices-table borderless ui selectable unstackable celled striped bottom attached table"
+                aria-label="Top 10 best prices in the galaxie"
             >
                 <thead>
                     <tr>
-                        <th>Market System</th>
-                        <th>Market Station</th>
-                        <th class="sortable" @click="clickSort('price')">
+                        <th scope="col">Market System</th>
+                        <th scope="col">Market Station</th>
+                        <th scope="col" class="sortable" @click="clickSort('price')">
                             Sell Price
                             <i :class="sortIconClasses('price')" aria-hidden="true"></i>
                         </th>
-                        <th class="sortable" @click="clickSort('demand')">
+                        <th scope="col" class="sortable" @click="clickSort('demand')">
                             Demand
                             <i :class="sortIconClasses('demand')" aria-hidden="true"></i>
                         </th>
-                        <th class="sortable" @click="clickSort('realPrice')">Real Price
+                        <th scope="col" class="sortable" @click="clickSort('realPrice')">Real Price
                             <i :class="sortIconClasses('realPrice')" aria-hidden="true"></i>
                         </th>
-                        <th class="sortable" @click="clickSort('realProfit')">Sell Profit
+                        <th scope="col" class="sortable" @click="clickSort('realProfit')">Sell Profit
                             <i :class="sortIconClasses('realProfit')" aria-hidden="true"></i>
                         </th>
-                        <th>Last Update</th>
+                        <th scope="col">Last Update</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="item in topPrices" :key="item.market.id">
                         <td class="clipboard" v-clipboard:copy="item.market.system">
-                            <span title="Click to copy">{{ item.market.system }}</span>
-                            <i class="icon copy outline icon" aria-hidden="true"></i>
+                            <span>{{ item.market.system }}</span>
+                            <i title="Click to copy" class="copy outline icon" aria-hidden="true"></i>
                         </td>
                         <td>
-                            <span>{{ item.market.station }}</span>
+                            <span :title="item.market.id">{{ item.market.station }}</span>
+                            <img v-if="isFleetCarrier(item.market.id)" title="FleetCarrier" class="copy outline icon" aria-hidden="true" src="../assets/fc-icon.png">
                         </td>
                         <td>
                             <span>{{ prettyNumber(item.price) }}</span>
@@ -148,6 +150,9 @@ export default {
         prettyNumber(n) {
             if (n) return Math.floor(n).toLocaleString()
             else return '0'
+        },
+        isFleetCarrier(id) {
+            return id > 3700000000
         }
     }
 }

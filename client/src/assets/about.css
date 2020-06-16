@@ -1,0 +1,10 @@
+header {
+    background-color: black;
+    background-image: url('./header_bg.webp');
+    background-position: 90% center;
+    background-repeat: no-repeat;
+    padding: 1px 50px;
+}
+main {
+    padding-top: 20px;
+}

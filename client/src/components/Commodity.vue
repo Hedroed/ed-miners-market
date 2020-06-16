@@ -7,7 +7,11 @@
         <div class="ui attached segment">
             <div class="ui mobile reversed stackable grid">
                 <div class="twelve wide column">
-                    <Stocks :stocks="data.stocks" />
+                    <Stocks v-if="!$apollo.loading" :stocks="data.stocks" />
+                    <button class="mini ui basic button reload-icon" @click="$apollo.queries.data.refetch()">
+                        <i class="redo alternate icon"></i>
+                        Refresh
+                    </button>
                 </div>
                 <div class="four wide column">
                     <CurrentBestPrice :price="data.prices[0]"/>
@@ -130,5 +134,8 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+.reload-icon {
+    margin-top: 10px;
 }
 </style>

@@ -26,11 +26,7 @@ AUTHORISED_SOFTWARES = [
     "RegulatedNoise",
     "RegulatedNoise__DJ"
 ]
-
-# Used this to excludes yourself for example has you don't want to handle your own messages ^^
-EXCLUDED_SOFTWARES = [
-    'My Awesome Market Uploader'
-]
+EXCLUDED_SOFTWARES = []
 
 WHITELISTED_COMMODITIES = [
     'lowtemperaturediamond',
@@ -40,7 +36,7 @@ WHITELISTED_COMMODITIES = [
 
 
 commodities_mapping = {}
-with open('data/inara_commodities_map.csv') as f:
+with open('./inara_commodities_map.csv') as f:
     reader = csv.DictReader(f)
     for row in reader:
         commodities_mapping[row['commodity_name']] = int(row['commodity_id'])

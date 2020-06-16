@@ -31,8 +31,8 @@ Vue.prototype.moment = moment
 
 const apolloClient = new ApolloClient({
     // You should use an absolute URL here
-    // uri: 'http://localhost:4000/graphql/'
-    uri: 'http://ed-tool.nathanryd.in/graphql/'
+    uri: 'http://localhost/graphql/'
+    // uri: 'http://ed-tool.nathanryd.in/graphql/'
 })
 
 const apolloProvider = new VueApollo({

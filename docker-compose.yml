@@ -1,23 +1,41 @@
 version: '3.3'
 services:
   updater:
-    volumes:
-      - './data:/usr/src/app/data'
     image: 'ed-updater:latest'
+    volumes:
+      - 'dbdata:/usr/src/app/data'
     build: ./updater
     environment:
       - DB_PATH=sqlite:///data/updater.db
 
 
   server:
-    volumes:
-      - './data:/usr/src/app/data'
     image: 'ed-server:latest'
+    volumes:
+      - 'dbdata:/usr/src/app/data'
     build: ./server
     environment:
       - DB_PATH=sqlite:///data/updater.db
-      - MAPPING_PATH=data/inara_commodities_map.csv
-    ports: 
-      - "3003:4000"
+    networks:
+      - edmm
 
 
+  web:
+    image: nginx
+    volumes:
+      - ./client/dist:/var/www/html:ro
+      - ./templates:/etc/nginx/templates
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_HOST=_
+      - NGINX_PORT=80
+    networks:
+      - edmm
+
+volumes:
+  dbdata:
+
+networks:
+  edmm:

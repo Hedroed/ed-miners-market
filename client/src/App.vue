@@ -7,7 +7,7 @@
                         <img src="./assets/logo.png" alt="logo" />
                     </a>
                     <a href="/" class="item">
-                        <h1>ED Minerals Market</h1>
+                        <h1>ED Miners Market</h1>
                     </a>
                     <div class="item">
                         <div class="ui icon input">
@@ -67,6 +67,10 @@ export default {
                 {
                     name: 'Painite',
                     id: 84
+                },
+                {
+                    name: 'Tritium',
+                    id: 10269
                 },
                 {
                     name: 'Benitoite',
