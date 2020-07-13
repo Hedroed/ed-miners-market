@@ -30,11 +30,30 @@ server {
 		proxy_set_header Connection 'upgrade';
 		proxy_set_header Host $host;
 		proxy_cache_bypass $http_upgrade;
- 	}
-	
+	}
+
+	location /.well-known/acme-challenge/ {
+		root /var/www/certbot;
+	}
+
+	include /etc/letsencrypt/options-ssl-nginx.conf;
+	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+	ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+
 	error_log /var/log/nginx/error.log;
 	access_log /var/log/nginx/access.log;
 
-	listen ${NGINX_PORT};
+	listen 443;
+}
 
+server {
+	if ($host = ${NGINX_HOST}) {
+		return 301 https://$host$request_uri;
+	}
+
+	server_name ${NGINX_HOST};
+	listen 80;
+	return 404;
 }

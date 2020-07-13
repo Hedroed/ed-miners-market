@@ -25,12 +25,13 @@ services:
     volumes:
       - ./client/dist:/var/www/html:ro
       - ./templates:/etc/nginx/templates
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     ports:
       - "80:80"
       - "443:443"
     environment:
       - NGINX_HOST=_
-      - NGINX_PORT=80
     networks:
       - edmm
 

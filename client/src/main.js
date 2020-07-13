@@ -30,7 +30,7 @@ Vue.prototype.moment = moment
 
 
 const apolloClient = new ApolloClient({
-    uri: 'http://edmm.space/graphql/'
+    uri: 'https://edmm.space/graphql/'
 })
 
 const apolloProvider = new VueApollo({
