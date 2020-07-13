@@ -36,19 +36,18 @@ server {
 		root /var/www/certbot;
 	}
 
-	include /etc/letsencrypt/options-ssl-nginx.conf;
-	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
 
+	listen 443 ssl;
 	ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
 	ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
-
-	error_log /var/log/nginx/error.log;
-	access_log /var/log/nginx/access.log;
-
-	listen 443;
+	include /etc/letsencrypt/options-ssl-nginx.conf;
+	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
 server {
+
 	if ($host = ${NGINX_HOST}) {
 		return 301 https://$host$request_uri;
 	}
