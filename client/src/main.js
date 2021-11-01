@@ -21,25 +21,22 @@ import 'semantic-ui-css/components/divider.min.css'
 
 import App from './App.vue'
 
-
 Vue.use(VueClipboard)
 Vue.use(VueApollo)
 
 Vue.config.productionTip = false
 Vue.prototype.moment = moment
 
-
 const apolloClient = new ApolloClient({
     // uri: 'http://localhost:4000/graphql/'
-    uri: 'https://edmm.nathanryd.in/graphql/'
+    uri: 'https://edmm.nathanryd.in/graphql/',
 })
 
 const apolloProvider = new VueApollo({
     defaultClient: apolloClient,
 })
-  
 
 new Vue({
-    render: h => h(App),
+    render: (h) => h(App),
     apolloProvider,
 }).$mount('#app')
