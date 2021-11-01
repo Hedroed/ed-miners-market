@@ -8,15 +8,8 @@ from sqlalchemy.sql import func
 
 
 ONE_DAY_SECOND = 24 * 60 * 60
-PRE_LOOP_SECOND = 10 * 60 * 60
 
 INARA_URL = "https://inara.cz/galaxy-commodity/%d"
-
-
-def get_loop_timestamp(timestamp):
-    shifted_ts = timestamp - PRE_LOOP_SECOND
-    time_in_day = shifted_ts % ONE_DAY_SECOND
-    return shifted_ts - time_in_day
 
 
 class CommodityMapping():
@@ -54,7 +47,6 @@ class DataManager():
 
     def get_commodity_prices(self, commodity_id, timestamp=None, limit=10):
         timestamp = timestamp or int(time.time())
-
         from_ts = timestamp - ONE_DAY_SECOND
 
         session = self.get_session()
@@ -85,8 +77,10 @@ class DataManager():
             CommodityMaxPrice.market_id
         ).subquery()
 
-        res = session.query(CommodityMaxPrice).join(last_updated, and_(CommodityMaxPrice.commodity_id == last_updated.c.commodity_id, CommodityMaxPrice.market_id ==
-                                                                       last_updated.c.market_id, CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
+        res = session.query(CommodityMaxPrice).join(last_updated, and_(
+            CommodityMaxPrice.commodity_id == last_updated.c.commodity_id,
+            CommodityMaxPrice.market_id == last_updated.c.market_id,
+            CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
 
         return [
             {
@@ -109,7 +103,6 @@ class DataManager():
 
     def get_commodity_prices_by_market(self, commodity_id, market_id, timestamp=None, limit=10):
         timestamp = timestamp or int(time.time())
-
         from_ts = timestamp - ONE_DAY_SECOND
 
         session = self.get_session()
@@ -181,10 +174,11 @@ class DataManager():
         """
 
         if market_id:
-            res = session.query(CommodityMaxPrice).filter(CommodityMaxPrice.commodity_id == commodity_id, CommodityMaxPrice.market_id == market_id).order_by(CommodityMaxPrice.timestamp).limit(limit).all()
+            query = session.query(CommodityMaxPrice).filter(CommodityMaxPrice.commodity_id == commodity_id,
+                                                            CommodityMaxPrice.market_id == market_id)
 
         else:
-            ordered_by_loop = session.query(
+            best_market_per_timestamp = session.query(
                 CommodityMaxPrice,
                 func.row_number().over(
                     partition_by=CommodityMaxPrice.timestamp,
@@ -192,7 +186,9 @@ class DataManager():
                 ).label("num")
             ).filter_by(commodity_id=commodity_id).subquery()
 
-            res = session.query(CommodityMaxPrice).select_entity_from(ordered_by_loop).filter(ordered_by_loop.c.num <= 1).limit(limit).all()
+            query = session.query(CommodityMaxPrice).select_entity_from(best_market_per_timestamp).filter(best_market_per_timestamp.c.num <= 1)
+
+        res = query.order_by(CommodityMaxPrice.timestamp.desc()).limit(limit).all()
 
         return [
             {
@@ -210,6 +206,27 @@ class DataManager():
                     "system": p.market.system,
                     "station": p.market.station,
                 },
+            } for p in res
+        ]
+
+    def get_reports(self, commodity_id=None, timestamp=None, limit=30):
+        timestamp = timestamp or int(time.time())
+        from_ts = timestamp - ONE_DAY_SECOND
+
+        session = self.get_session()
+
+        query = session.query(func.sum(CommodityMaxPrice.reports).label("reports"),
+                              CommodityMaxPrice.timestamp.label("timestamp")).filter(CommodityMaxPrice.timestamp <= timestamp)
+
+        if commodity_id is not None:
+            query = query.filter(CommodityMaxPrice.commodity_id == commodity_id)
+
+        res = query.group_by(CommodityMaxPrice.timestamp).order_by(CommodityMaxPrice.timestamp.desc()).limit(limit).all()
+
+        return [
+            {
+                "date": p.timestamp,
+                "reports": int(p.reports),
             } for p in res
         ]
 

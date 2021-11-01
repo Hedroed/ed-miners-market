@@ -20,7 +20,7 @@ def run() -> None:
         ],
         executor_http_endpoint="/graphql/",
         executor_http_methods=["POST"],
-        graphiql_enabled=False,
+        graphiql_enabled=True,
     )
 
     # `aiohttp_cors.setup` returns `aiohttp_cors.CorsConfig` instance.

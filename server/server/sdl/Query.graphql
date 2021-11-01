@@ -2,6 +2,8 @@ type Query {
   commodityPricesChart(commodity_id: ID!, market_id: ID, limit: Int = 30): [CommodityPrice!]
   commodityPrices(commodity_id: ID!, market_id: ID, timestamp: Int, limit: Int = 10): [CommodityPrice!]
 
+  reports(commodity_id: ID, timestamp: Int, limit: Int = 30): [Report!]
+
   markets(limit: Int = 10): [Market!]!
   market(id:ID!): Market!
 
@@ -30,4 +32,9 @@ type Market {
     station: String!
     solDistance: Float
     borannDistance: Float
+}
+
+type Report {
+    date: Int!
+    reports: Int!
 }
