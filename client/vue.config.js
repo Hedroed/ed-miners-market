@@ -1,7 +1,5 @@
 module.exports = {
-  publicPath: process.env.NODE_ENV === 'production'
-    ? '/ed-miners-market/'
-    : '/',
+  publicPath: '/',
   pluginOptions: {
     moment: {
       locales: [
