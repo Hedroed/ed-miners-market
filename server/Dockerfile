@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "python", "-m", "server" ]
+CMD [ "./wait-for-it.sh", "db:3306", "--", "python", "-m", "server" ]

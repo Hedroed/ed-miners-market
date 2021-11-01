@@ -1,3 +1,4 @@
 tartiflette-aiohttp
 aiohttp_cors
 sqlalchemy
+PyMySQL

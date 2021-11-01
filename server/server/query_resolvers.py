@@ -8,8 +8,8 @@ from .data import DataManager
 manager = DataManager(os.environ.get('DB_PATH'), './inara_commodities_map.csv')
 
 
-@Resolver("Query.commodityMaxPrices")
-async def resolve_query_max_prices(
+@Resolver("Query.commodityPricesChart")
+async def resolve_query_prices_chart(
     parent: Optional[Any],
     args: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -28,7 +28,7 @@ async def resolve_query_max_prices(
     :return: the list of all recipes
     :rtype: List[Dict[str, Any]]
     """
-    return manager.get_commodity_max_prices(args["commodity_id"], args["days"])
+    return manager.get_commodity_chart(args["commodity_id"], args.get("market_id", None), args["limit"])
 
 
 @Resolver("Query.commodityPrices")
@@ -51,11 +51,14 @@ async def resolve_query_prices(
     :return: a recipe
     :rtype: Optional[Dict[str, Any]]
     """
+    if args.get("market_id", None):
+        return manager.get_commodity_prices_by_market(args["commodity_id"], args["market_id"], args.get("timestamp",None), args["limit"])
+
     return manager.get_commodity_prices(args["commodity_id"], args.get("timestamp",None), args["limit"])
 
 
 @Resolver("Query.markets")
-async def resolve_query_prices(
+async def resolve_query_markets(
     parent: Optional[Any],
     args: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -76,8 +79,9 @@ async def resolve_query_prices(
     """
     return manager.get_markets(args["limit"])
 
+
 @Resolver("Query.market")
-async def resolve_query_prices(
+async def resolve_query_market(
     parent: Optional[Any],
     args: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -100,7 +104,7 @@ async def resolve_query_prices(
 
 
 @Resolver("Query.commodities")
-async def resolve_query_prices(
+async def resolve_query_commodities(
     parent: Optional[Any],
     args: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -122,7 +126,7 @@ async def resolve_query_prices(
     return manager.get_commodities(args["limit"])
 
 @Resolver("Query.commodity")
-async def resolve_query_prices(
+async def resolve_query_commodity(
     parent: Optional[Any],
     args: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -142,4 +146,3 @@ async def resolve_query_prices(
     :rtype: Optional[Dict[str, Any]]
     """
     return manager.get_commodity(args["id"])
-

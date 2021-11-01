@@ -12,6 +12,7 @@ PRE_LOOP_SECOND = 10 * 60 * 60
 
 INARA_URL = "https://inara.cz/galaxy-commodity/%d"
 
+
 def get_loop_timestamp(timestamp):
     shifted_ts = timestamp - PRE_LOOP_SECOND
     time_in_day = shifted_ts % ONE_DAY_SECOND
@@ -33,9 +34,10 @@ class CommodityMapping():
 
     def to_name_safe(self, id_):
         return self.mapping_to_name.get(id_, "Not Found")
-    
+
     def to_id_safe(self, name):
         return self.mapping_to_id.get(name, 0)
+
 
 class DataManager():
 
@@ -50,14 +52,10 @@ class DataManager():
     def get_session(self):
         return self.session_factory()
 
-
     def get_commodity_prices(self, commodity_id, timestamp=None, limit=10):
-        if timestamp is None:
-            to_ts = get_loop_timestamp(int(time.time()))
-        else:
-            to_ts = get_loop_timestamp(timestamp)
+        timestamp = timestamp or int(time.time())
 
-        from_ts = to_ts - ONE_DAY_SECOND
+        from_ts = timestamp - ONE_DAY_SECOND
 
         session = self.get_session()
 
@@ -74,15 +72,28 @@ class DataManager():
         order by sell_price;
         """
 
-        last_updated = session.query(CommodityMaxPrice.commodity_id, CommodityMaxPrice.market_id, func.max(CommodityMaxPrice.timestamp).label("max_timestamp")).filter(CommodityMaxPrice.commodity_id==commodity_id, CommodityMaxPrice.timestamp>from_ts, CommodityMaxPrice.timestamp<=to_ts).group_by(CommodityMaxPrice.commodity_id, CommodityMaxPrice.market_id).subquery()
-        
-        res = session.query(CommodityMaxPrice).join(last_updated,and_(CommodityMaxPrice.commodity_id==last_updated.c.commodity_id, CommodityMaxPrice.market_id==last_updated.c.market_id, CommodityMaxPrice.timestamp==last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
+        last_updated = session.query(
+            CommodityMaxPrice.commodity_id,
+            CommodityMaxPrice.market_id,
+            func.max(CommodityMaxPrice.timestamp).label("max_timestamp")
+        ).filter(
+            CommodityMaxPrice.commodity_id == commodity_id,
+            CommodityMaxPrice.timestamp > from_ts,
+            CommodityMaxPrice.timestamp <= timestamp
+        ).group_by(
+            CommodityMaxPrice.commodity_id,
+            CommodityMaxPrice.market_id
+        ).subquery()
+
+        res = session.query(CommodityMaxPrice).join(last_updated, and_(CommodityMaxPrice.commodity_id == last_updated.c.commodity_id, CommodityMaxPrice.market_id ==
+                                                                       last_updated.c.market_id, CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
 
         return [
             {
                 "price": p.sell_price,
                 "demand": p.sell_demand,
                 "date": p.updated or p.timestamp,
+                "reports": p.reports,
                 "commodity": {
                     "id": p.commodity_id,
                     "name": self.mapping.to_name_safe(p.commodity_id),
@@ -96,7 +107,50 @@ class DataManager():
             } for p in res
         ]
 
-    def get_commodity_max_prices(self, commodity_id, days=30):
+    def get_commodity_prices_by_market(self, commodity_id, market_id, timestamp=None, limit=10):
+        timestamp = timestamp or int(time.time())
+
+        from_ts = timestamp - ONE_DAY_SECOND
+
+        session = self.get_session()
+
+        last_updated = session.query(
+            CommodityMaxPrice.commodity_id,
+            func.max(CommodityMaxPrice.timestamp).label("max_timestamp")
+        ).filter(
+            CommodityMaxPrice.commodity_id == commodity_id,
+            CommodityMaxPrice.market_id == market_id,
+            CommodityMaxPrice.timestamp > from_ts,
+            CommodityMaxPrice.timestamp <= timestamp
+        ).group_by(
+            CommodityMaxPrice.commodity_id,
+        ).subquery()
+
+        res = session.query(CommodityMaxPrice).join(last_updated, and_(
+            CommodityMaxPrice.commodity_id == last_updated.c.commodity_id,
+            CommodityMaxPrice.market_id == market_id,
+            CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
+
+        return [
+            {
+                "price": p.sell_price,
+                "demand": p.sell_demand,
+                "date": p.updated or p.timestamp,
+                "reports": p.reports,
+                "commodity": {
+                    "id": p.commodity_id,
+                    "name": self.mapping.to_name_safe(p.commodity_id),
+                    "inaraLink": INARA_URL % p.commodity_id
+                },
+                "market": {
+                    "id": p.market.id,
+                    "system": p.market.system,
+                    "station": p.market.station,
+                },
+            } for p in res
+        ]
+
+    def get_commodity_chart(self, commodity_id, market_id=None, limit=30):
         session = self.get_session()
 
         """
@@ -126,15 +180,26 @@ class DataManager():
         ;
         """
 
-        ordered_by_loop = session.query(CommodityMaxPrice, func.row_number().over(partition_by=CommodityMaxPrice.timestamp, order_by=(CommodityMaxPrice.sell_price.desc(), CommodityMaxPrice.sell_demand.desc())).label("num")).filter_by(commodity_id=commodity_id).subquery()
+        if market_id:
+            res = session.query(CommodityMaxPrice).filter(CommodityMaxPrice.commodity_id == commodity_id, CommodityMaxPrice.market_id == market_id).order_by(CommodityMaxPrice.timestamp).limit(limit).all()
 
-        res = session.query(CommodityMaxPrice).select_entity_from(ordered_by_loop).filter(ordered_by_loop.c.num <= 1).all()
+        else:
+            ordered_by_loop = session.query(
+                CommodityMaxPrice,
+                func.row_number().over(
+                    partition_by=CommodityMaxPrice.timestamp,
+                    order_by=(CommodityMaxPrice.sell_price.desc(), CommodityMaxPrice.sell_demand.desc())
+                ).label("num")
+            ).filter_by(commodity_id=commodity_id).subquery()
+
+            res = session.query(CommodityMaxPrice).select_entity_from(ordered_by_loop).filter(ordered_by_loop.c.num <= 1).limit(limit).all()
 
         return [
             {
                 "price": p.sell_price,
                 "demand": p.sell_demand,
                 "date": p.timestamp,
+                "reports": p.reports,
                 "commodity": {
                     "id": p.commodity_id,
                     "name": self.mapping.to_name_safe(p.commodity_id),
@@ -152,7 +217,7 @@ class DataManager():
         session = self.get_session()
 
         return session.query(Market).limit(limit).all()
-    
+
     def get_market(self, id_):
         session = self.get_session()
 
@@ -166,7 +231,7 @@ class DataManager():
                 "inaraLink": INARA_URL % id_
             } for id_, name in self.mapping.mapping_to_name.items()
         ]
-    
+
     def get_commodity(self, id_):
         name = self.mapping.to_name_safe(id_)
         return {

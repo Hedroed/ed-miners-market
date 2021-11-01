@@ -12,43 +12,27 @@ class Market(Base):
     __tablename__ = "markets"
 
     id = Column(BigInteger, primary_key=True)
-    system = Column(String)
-    station = Column(String)
+    system = Column(String(256))
+    station = Column(String(256))
 
-    commodities = relationship("CommodityPrice")
+    commodities = relationship("CommodityMaxPrice", back_populates="market")
 
     def __repr__(self):
         return "<Market(id='%s', system='%s', station='%s')>" % (self.id, self.system, self.station)
 
 
-class CommodityPrice(Base):
-    __tablename__ = "commoditiesPrice"
-
-    id = Column(Integer, primary_key=True)
-    commodity_id = Column(Integer)
-    sell_price = Column(Integer)
-    sell_demand = Column(Integer)
-    timestamp = Column(BigInteger)
-
-    market_id = Column(BigInteger, ForeignKey('markets.id'))
-    market = relationship("Market")
-
-    def __repr__(self):
-        return "<CommodityPrice(commodity_id='%s', sell_price='%s', sell_demand='%s', date='%s', market=%s)>" % (self.commodity_id, self.sell_price, self.sell_demand, self.timestamp, self.market)
-
-
 class CommodityMaxPrice(Base):
-    __tablename__ = "commoditiesMaxPrice"
+    __tablename__ = "commodities"
 
     commodity_id = Column(Integer, primary_key=True)
     sell_price = Column(Integer)
     sell_demand = Column(Integer)
     timestamp = Column(BigInteger, primary_key=True)
     updated = Column(BigInteger)
+    reports = Column(BigInteger, nullable=False, default=0)
 
     market_id = Column(BigInteger, ForeignKey('markets.id'), primary_key=True)
-    market = relationship("Market")
+    market = relationship("Market", back_populates="commodities")
 
     def __repr__(self):
-        return "<CommodityMAXPrice(commodity_id='%s', sell_price='%s', sell_demand='%s', date='%s', market=%s)>" % (self.commodity_id, self.sell_price, self.sell_demand, self.timestamp, self.market)
-
+        return "<CommodityMaxPrice(commodity_id='%s', sell_price='%s', sell_demand='%s', date='%s', market=%s)>" % (self.commodity_id, self.sell_price, self.sell_demand, self.timestamp, self.market)

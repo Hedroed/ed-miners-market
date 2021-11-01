@@ -1,18 +1,19 @@
 type Query {
-  commodityMaxPrices(commodity_id: Int!, days: Int!): [CommodityPrice!]
-  commodityPrices(commodity_id: Int!, timestamp: Int, limit: Int = 10): [CommodityPrice!]
+  commodityPricesChart(commodity_id: ID!, market_id: ID, limit: Int = 30): [CommodityPrice!]
+  commodityPrices(commodity_id: ID!, market_id: ID, timestamp: Int, limit: Int = 10): [CommodityPrice!]
 
   markets(limit: Int = 10): [Market!]!
-  market(id:Int!): Market!
+  market(id:ID!): Market!
 
   commodities(limit: Int = 10): [Commodity!]!
-  commodity(id: Int!): Commodity!
+  commodity(id: ID!): Commodity!
 }
 
 type CommodityPrice {
     price: Int!
     demand: Int!
     date: Int!
+    reports: Int!
     commodity: Commodity!
     market: Market!
 }
