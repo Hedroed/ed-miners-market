@@ -42,8 +42,8 @@ export default {
                             display: true,
                             type: 'time',
                             time: {
-                                tooltipFormat: 'LL',
-                                unit: 'day'
+                                tooltipFormat: 'LLL',
+                                unit: 'hour'
                             },
                             scaleLabel: {
                                 display: false,

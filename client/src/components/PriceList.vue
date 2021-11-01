@@ -25,6 +25,7 @@
                             <i :class="sortIconClasses('realProfit')" aria-hidden="true"></i>
                         </th>
                         <th scope="col">Last Update</th>
+                        <th scope="col">Reports</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,7 +51,10 @@
                             <span>{{ prettyNumber(item.realProfit) }}</span>
                         </td>
                         <td>
-                            <span>{{ moment.unix(item.date).fromNow() }}</span>
+                            <span :class="updateDateColor(item.date)" >{{ moment.unix(item.date).fromNow() }}</span>
+                        </td>
+                        <td>
+                            <span >{{ prettyNumber(item.reports) }}</span>
                         </td>
                     </tr>
                 </tbody>
@@ -61,6 +65,9 @@
 
 <script>
 import _ from 'lodash/collection'
+import moment from 'moment'
+
+import {isFleetCarrier} from '../utils'
 
 export default {
     name: 'PriceList',
@@ -83,7 +90,10 @@ export default {
     computed: {
         topPrices() {
             const local = this.prices.map(d => {
-                const realPrice = this.computeRealPrice(d.price, d.demand)
+                let realPrice = d.price
+                if(!isFleetCarrier(d.market.id)) {
+                    realPrice = this.computeRealPrice(d.price, d.demand)
+                }
                 return {
                     ...d,
                     realPrice,
@@ -151,8 +161,18 @@ export default {
             if (n) return Math.floor(n).toLocaleString()
             else return '0'
         },
+        updateDateColor(timestamp) {
+            const diff = moment().diff(moment.unix(timestamp), 'seconds')
+            if(diff < 3600) {
+                return "date-good"
+            } else if(diff < 86400) {
+                return "date-average"
+            } else {
+                return "date-old"
+            }
+        },
         isFleetCarrier(id) {
-            return id > 3700000000
+            return isFleetCarrier(id)
         }
     }
 }
@@ -179,5 +199,15 @@ export default {
 .prices-table th.sortable:hover {
     color: #2185d0;
     cursor: pointer;
+}
+
+.date-good {
+    color: #151;
+}
+.date-average {
+    color: rgb(136, 100, 27);
+}
+.date-old {
+    color: #611;
 }
 </style>

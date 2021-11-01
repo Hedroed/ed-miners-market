@@ -35,6 +35,8 @@ import AlertLow from './alerts/AlertLow.vue'
 import AlertVeryLow from './alerts/AlertVeryLow.vue'
 import EDSpinner from './EDSpinner.vue'
 
+import {isFleetCarrier} from '../utils'
+
 export default {
     name: 'Commodity',
     props: ['name', 'id', 'cargo'],
@@ -49,19 +51,21 @@ export default {
     data() {
         return {
             data: {prices: [], stocks: []},
-            days: 30,
-            skip: true
+            hours: 30,
+            skip: true,
+            market_id: null,
         }
     },
     apollo: {
         data: {
             // gql query
             query: gql`
-                query commodityData($id: Int!, $days: Int!) {
-                    commodityPrices(commodity_id: $id) {
+                query commodityData($id: ID!, $hours: Int!, $mid: ID) {
+                    commodityPrices(commodity_id: $id, market_id: $mid) {
                         price
                         demand
                         date
+                        reports
                         market {
                             system
                             station
@@ -71,7 +75,7 @@ export default {
                             inaraLink
                         }
                     }
-                    commodityMaxPrices(commodity_id: $id, days: $days) {
+                    commodityPricesChart(commodity_id: $id, market_id: $mid, limit: $hours) {
                         price
                         demand
                         date
@@ -82,13 +86,14 @@ export default {
             variables() {
                 return {
                     id: this.id,
-                    days: this.days
+                    hours: this.hours,
+                    mid: this.market_id,
                 }
             },
             update: data => {
                 return {
                     prices: data.commodityPrices,
-                    stocks: data.commodityMaxPrices
+                    stocks: data.commodityPricesChart
                 }
             },
             skip() {
@@ -99,11 +104,11 @@ export default {
     computed: {
         isLowDemand() {
             if (this.data.prices.length < 1) return false
-            return this.data.prices[0].demand <= 1000
+            return this.data.prices[0].demand <= 1000 && !isFleetCarrier(this.data.prices[0].market.id)
         },
         isVeryLowDemand() {
             if (this.data.prices.length < 1) return false
-            return this.data.prices[0].demand <= 200
+            return this.data.prices[0].demand <= 200 && !isFleetCarrier(this.data.prices[0].market.id)
         }
     },
     mounted() {
