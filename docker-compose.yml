@@ -3,37 +3,40 @@ services:
   updater:
     image: 'ed-updater:latest'
     volumes:
-      - 'dbdata:/usr/src/app/data'
+      - './updater:/usr/src/app'
+      # - 'dbdata:/usr/src/app/data'
     build: ./updater
     environment:
-      - DB_PATH=sqlite:///data/updater.db
-
+      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+    networks:
+      - edmm
+    depends_on:
+      - "db"
 
   server:
     image: 'ed-server:latest'
     volumes:
-      - 'dbdata:/usr/src/app/data'
+      - './server:/usr/src/app'
+      # - 'dbdata:/usr/src/app/data'
     build: ./server
     environment:
-      - DB_PATH=sqlite:///data/updater.db
+      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
     networks:
       - edmm
-
-
-  web:
-    image: nginx
-    volumes:
-      - ./client/dist:/var/www/html:ro
-      - ./templates:/etc/nginx/templates
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot:ro
     ports:
-      - "80:80"
-      - "443:443"
+      - "4000:4000"
+    depends_on:
+      - "db"
+
+  db:
+    image: mariadb
     environment:
-      - NGINX_HOST=_
+      MARIADB_ROOT_PASSWORD: '5j2R03lurJHs'
+      MARIADB_DATABASE: edmm
     networks:
       - edmm
+    volumes:
+      - dbdata:/var/lib/mysql
 
 volumes:
   dbdata:

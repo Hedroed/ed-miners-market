@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  updater:
+    image: 'registry.gitlab.com/hedroed/bidule-workzone:updater'
+    environment:
+      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+    networks:
+      - edmm
+    depends_on:
+      - "db"
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  server:
+    image: 'registry.gitlab.com/hedroed/bidule-workzone/server'
+    environment:
+      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+    networks:
+      - edmm
+      - traefik-public
+    depends_on:
+      - "db"
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.edmm-https.entrypoints=https
+        - traefik.http.routers.edmm-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.edmm-https.tls=true
+        - traefik.http.routers.edmm-https.tls.certresolver=le
+        - traefik.http.services.edmm.loadbalancer.server.port=4000
+
+  db:
+    image: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: '5j2R03lurJHs'
+      MARIADB_DATABASE: edmm
+    networks:
+      - edmm
+    volumes:
+      - dbdata:/var/lib/mysql
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+volumes:
+  dbdata:
+
+networks:
+  edmm:
+
+  traefik-public:
+    external: true
