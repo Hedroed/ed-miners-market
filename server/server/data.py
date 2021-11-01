@@ -35,7 +35,7 @@ class CommodityMapping():
 class DataManager():
 
     def __init__(self, db_path, mapping_path):
-        self.engine = create_engine(db_path, echo=False)
+        self.engine = create_engine(db_path, echo=False, pool_recycle=3600)
         Base.metadata.create_all(self.engine)
 
         self.session_factory = sessionmaker(bind=self.engine)
