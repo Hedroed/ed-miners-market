@@ -72,6 +72,7 @@ def save_commodities(data, session):
 
     authorised = data['header']['softwareName'] in AUTHORISED_SOFTWARES
     if not authorised:
+        logging.warning("SKIP: not authorized software %s", data['header']['softwareName'])
         return
 
     ts = int(dateutil.parser.isoparse(data['message']['timestamp']).timestamp())
@@ -82,7 +83,7 @@ def save_commodities(data, session):
 
     system = data['message']['systemName']
     station = data['message']['stationName']
-    market = data['message']['marketId']
+    market_id = data['message']['marketId']
 
     for commodity in data['message']['commodities']:
         name = commodity['name'].lower()
@@ -100,33 +101,40 @@ def save_commodities(data, session):
 
         demand = commodity['demand']
 
-        entry = session.query(CommodityMaxPrice).filter_by(commodity_id=commodity_id, timestamp=loop_ts, market_id=market).first()
+        entry = session.query(CommodityMaxPrice).filter_by(commodity_id=commodity_id, timestamp=loop_ts, market_id=market_id).first()
 
         if entry is None:
-            
-            market_entry = session.query(Market).filter_by(id=market).first()
+
+            market_entry = session.query(Market).filter_by(id=market_id).first()
 
             if market_entry is None:
-                new_market = Market(id=market, system=system, station=station)
+                new_market = Market(id=market_id, system=system, station=station)
                 session.add(new_market)
 
-            new_commodity = CommodityMaxPrice(commodity_id=commodity_id, sell_price=price, sell_demand=demand, timestamp=loop_ts, updated=ts, market_id=market)
+            new_commodity = CommodityMaxPrice(
+                commodity_id=commodity_id,
+                sell_price=price,
+                sell_demand=demand,
+                timestamp=loop_ts,
+                updated=ts,
+                market_id=market_id,
+                reports=1)
             session.add(new_commodity)
             logging.info("New entry: %s", new_commodity)
 
         else:
             if entry.market is None:
-                session.add(Market(id=market, system=system, station=station))
+                logging.error("Adding market to existing commodities !!!")
 
-            if price > entry.sell_price:
-                entry.sell_price = price
-            
-            if price == entry.sell_price and demand > entry.sell_demand:
-                entry.sell_demand = demand
-            
-            if price == entry.sell_price or demand == entry.sell_demand:
-                entry.updated=ts
-                logging.info("Update entry: %s", entry)
+            elif entry.market.system != system:
+                entry.market.system = system
+
+            entry.sell_price = price
+            entry.sell_demand = demand
+            entry.updated = ts
+            entry.reports += 1
+
+            logging.info("Update entry: %s", entry)
 
             session.merge(entry)
 
@@ -146,7 +154,7 @@ def parse_msg(session_factory, data):
 def main():
     context = zmq.Context()
     subscriber = context.socket(zmq.SUB)
-    
+
     subscriber.setsockopt(zmq.SUBSCRIBE, b"")
     subscriber.setsockopt(zmq.RCVTIMEO, EDDN_TIMEOUT)
 
@@ -157,17 +165,17 @@ def main():
     while True:
         try:
             subscriber.connect(EDDN_RELAY)
-            
+
             while True:
                 raw_message = subscriber.recv()
-                
+
                 if raw_message == False:
                     subscriber.disconnect(EDDN_RELAY)
                     break
-                
+
                 message = zlib.decompress(raw_message)
                 data = json.loads(message)
-                
+
                 parse_msg(session_factory, data)
 
 
