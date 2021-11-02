@@ -9,7 +9,7 @@ from sqlalchemy.sql import func
 
 ONE_DAY_SECOND = 24 * 60 * 60
 
-INARA_URL = "https://inara.cz/galaxy-commodity/%d"
+INARA_URL = "https://inara.cz/galaxy-commodity/%s"
 
 
 class CommodityMapping():
@@ -45,9 +45,8 @@ class DataManager():
     def get_session(self):
         return self.session_factory()
 
-    def get_commodity_prices(self, commodity_id, timestamp=None, limit=10):
-        timestamp = timestamp or int(time.time())
-        from_ts = timestamp - ONE_DAY_SECOND
+    def get_commodity_prices(self, commodity_id, timestamp=None, limit=10) -> "Commodity":
+        timestamp = timestamp or (int(time.time()) - ONE_DAY_SECOND)
 
         session = self.get_session()
 
@@ -70,8 +69,7 @@ class DataManager():
             func.max(CommodityMaxPrice.timestamp).label("max_timestamp")
         ).filter(
             CommodityMaxPrice.commodity_id == commodity_id,
-            CommodityMaxPrice.timestamp > from_ts,
-            CommodityMaxPrice.timestamp <= timestamp
+            CommodityMaxPrice.timestamp > timestamp
         ).group_by(
             CommodityMaxPrice.commodity_id,
             CommodityMaxPrice.market_id
@@ -82,28 +80,27 @@ class DataManager():
             CommodityMaxPrice.market_id == last_updated.c.market_id,
             CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
 
-        return [
-            {
-                "price": p.sell_price,
-                "demand": p.sell_demand,
-                "date": p.updated or p.timestamp,
-                "reports": p.reports,
-                "commodity": {
-                    "id": p.commodity_id,
-                    "name": self.mapping.to_name_safe(p.commodity_id),
-                    "inaraLink": INARA_URL % p.commodity_id
-                },
-                "market": {
-                    "id": p.market.id,
-                    "system": p.market.system,
-                    "station": p.market.station,
-                },
-            } for p in res
-        ]
+        return {
+            "id": commodity_id,
+            "name": self.mapping.to_name_safe(commodity_id),
+            "inaraLink": INARA_URL % commodity_id,
+            "prices": [
+                {
+                    "price": p.sell_price,
+                    "demand": p.sell_demand,
+                    "date": p.updated or p.timestamp,
+                    "reports": p.reports,
+                    "market": {
+                        "id": p.market.id,
+                        "system": p.market.system,
+                        "station": p.market.station,
+                    },
+                } for p in res
+            ],
+        }
 
-    def get_commodity_prices_by_market(self, commodity_id, market_id, timestamp=None, limit=10):
-        timestamp = timestamp or int(time.time())
-        from_ts = timestamp - ONE_DAY_SECOND
+    def get_commodity_prices_by_market(self, commodity_id, market_id, timestamp=None, limit=10) -> "Commodity":
+        timestamp = timestamp or (int(time.time()) - ONE_DAY_SECOND)
 
         session = self.get_session()
 
@@ -113,8 +110,7 @@ class DataManager():
         ).filter(
             CommodityMaxPrice.commodity_id == commodity_id,
             CommodityMaxPrice.market_id == market_id,
-            CommodityMaxPrice.timestamp > from_ts,
-            CommodityMaxPrice.timestamp <= timestamp
+            CommodityMaxPrice.timestamp > timestamp,
         ).group_by(
             CommodityMaxPrice.commodity_id,
         ).subquery()
@@ -124,26 +120,26 @@ class DataManager():
             CommodityMaxPrice.market_id == market_id,
             CommodityMaxPrice.timestamp == last_updated.c.max_timestamp)).order_by(CommodityMaxPrice.sell_price.desc()).limit(limit).all()
 
-        return [
-            {
-                "price": p.sell_price,
-                "demand": p.sell_demand,
-                "date": p.updated or p.timestamp,
-                "reports": p.reports,
-                "commodity": {
-                    "id": p.commodity_id,
-                    "name": self.mapping.to_name_safe(p.commodity_id),
-                    "inaraLink": INARA_URL % p.commodity_id
-                },
-                "market": {
-                    "id": p.market.id,
-                    "system": p.market.system,
-                    "station": p.market.station,
-                },
-            } for p in res
-        ]
+        return {
+            "id": commodity_id,
+            "name": self.mapping.to_name_safe(commodity_id),
+            "inaraLink": INARA_URL % commodity_id,
+            "prices": [
+                {
+                    "price": p.sell_price,
+                    "demand": p.sell_demand,
+                    "date": p.updated or p.timestamp,
+                    "reports": p.reports,
+                    "market": {
+                        "id": p.market.id,
+                        "system": p.market.system,
+                        "station": p.market.station,
+                    },
+                } for p in res
+            ],
+        }
 
-    def get_commodity_chart(self, commodity_id, market_id=None, limit=30):
+    def get_commodity_chart(self, commodity_id, market_id=None, limit=30) -> "Commodity":
         session = self.get_session()
 
         """
@@ -190,24 +186,24 @@ class DataManager():
 
         res = query.order_by(CommodityMaxPrice.timestamp.desc()).limit(limit).all()
 
-        return [
-            {
-                "price": p.sell_price,
-                "demand": p.sell_demand,
-                "date": p.timestamp,
-                "reports": p.reports,
-                "commodity": {
-                    "id": p.commodity_id,
-                    "name": self.mapping.to_name_safe(p.commodity_id),
-                    "inaraLink": INARA_URL % p.commodity_id
-                },
-                "market": {
-                    "id": p.market.id,
-                    "system": p.market.system,
-                    "station": p.market.station,
-                },
-            } for p in res
-        ]
+        return {
+            "id": commodity_id,
+            "name": self.mapping.to_name_safe(commodity_id),
+            "inaraLink": INARA_URL % commodity_id,
+            "prices": [
+                {
+                    "price": p.sell_price,
+                    "demand": p.sell_demand,
+                    "date": p.timestamp,
+                    "reports": p.reports,
+                    "market": {
+                        "id": p.market.id,
+                        "system": p.market.system,
+                        "station": p.market.station,
+                    },
+                } for p in res
+            ],
+        }
 
     def get_reports(self, commodity_id=None, timestamp=None, limit=30):
         timestamp = timestamp or int(time.time())
@@ -245,7 +241,8 @@ class DataManager():
             {
                 "id": id_,
                 "name": name,
-                "inaraLink": INARA_URL % id_
+                "inaraLink": INARA_URL % id_,
+                "prices": [],
             } for id_, name in self.mapping.mapping_to_name.items()
         ]
 
@@ -254,5 +251,6 @@ class DataManager():
         return {
             "id": id_,
             "name": name,
-            "inaraLink": INARA_URL % id_
+            "inaraLink": INARA_URL % id_,
+            "prices": [],
         }

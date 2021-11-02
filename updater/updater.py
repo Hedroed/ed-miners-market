@@ -13,14 +13,14 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 from model import Base, Market, CommodityMaxPrice
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 ONE_DAY_SECOND = 24 * 3600
 PRE_LOOP_SECOND = 14 * 3600
 
 EDDN_RELAY = 'tcp://eddn.edcd.io:9500'
-EDDN_TIMEOUT = 600000 # 5 min
+EDDN_TIMEOUT = 600000  # 5 min
 
 
 #### KNOWN SOFTWARES: ####
@@ -148,7 +148,7 @@ def parse_msg(session_factory, data):
             session.commit()
 
         else:
-            logging.warning('Unknown version: %s', schema_ref);
+            logging.warning('Unknown version: %s', schema_ref)
 
 
 def main():
@@ -178,11 +178,11 @@ def main():
 
                 parse_msg(session_factory, data)
 
-
         except zmq.ZMQError as e:
             logging.warning('ZMQSocketException: %s' % e)
             subscriber.disconnect(EDDN_RELAY)
             time.sleep(5)
+
 
 if __name__ == '__main__':
     main()

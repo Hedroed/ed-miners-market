@@ -90,11 +90,11 @@ export default {
             if (this.stocks.length == 0) {
                 return { labels: [], datasets: [] }
             }
-            const past31days = moment().subtract(31, 'days');
+            // const past31days = moment().subtract(31, 'days');
 
             const all_data = this.stocks
                 .map(d => ({...d, date: moment(d.date * 1000)}))
-                .filter(d => d.date.isAfter(past31days))
+                // .filter(d => d.date.isAfter(past31days))
 
             return {
                 labels: all_data.map(d => d.date),

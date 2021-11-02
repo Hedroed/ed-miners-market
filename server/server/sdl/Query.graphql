@@ -1,6 +1,6 @@
 type Query {
-  commodityPricesChart(commodity_id: ID!, market_id: ID, limit: Int = 30): [CommodityPrice!]
-  commodityPrices(commodity_id: ID!, market_id: ID, timestamp: Int, limit: Int = 10): [CommodityPrice!]
+  commodityPricesChart(commodity_id: ID!, market_id: ID, limit: Int = 30): Commodity!
+  commodityPrices(commodity_id: ID!, market_id: ID, timestamp: Int, limit: Int = 10): Commodity!
 
   reports(commodity_id: ID, timestamp: Int, limit: Int = 30): [Report!]
 
@@ -16,13 +16,13 @@ type CommodityPrice {
     demand: Int!
     date: Int!
     reports: Int!
-    commodity: Commodity!
     market: Market!
 }
 
 type Commodity {
     id: ID!
     name: String!
+    prices: [CommodityPrice]!
     inaraLink: String
 }
 

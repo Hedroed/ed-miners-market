@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="ui bottom attached segment">
-            <a class="ui orange basic button" target="_blank" rel="noopener noreferrer" :href="price.commodity.inaraLink">
+            <a class="ui orange basic button" target="_blank" rel="noopener noreferrer" :href="inaraLink">
                 <i class="external alternate icon" aria-hidden="true"></i>
                 Inara page
             </a>
@@ -37,6 +37,7 @@
 export default {
     name: 'CurrentBestPrice',
     props: {
+        inaraLink: String,
         price: {
             type: Object,
             default: function () {
@@ -47,9 +48,6 @@ export default {
                         system: '---',
                         station: '---'
                     },
-                    commodity: {
-                        inaraLink: ''
-                    }
                 }
             }
         }

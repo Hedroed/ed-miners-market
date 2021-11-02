@@ -7,20 +7,20 @@
         <div class="ui attached segment">
             <div class="ui mobile reversed stackable grid">
                 <div class="twelve wide column">
-                    <Stocks v-if="!$apollo.loading" :stocks="data.stocks" />
+                    <Stocks v-if="!$apollo.loading" :stocks="data.stocks.prices" />
                     <button class="mini ui basic button reload-icon" @click="$apollo.queries.data.refetch()">
                         <i class="redo alternate icon"></i>
                         Refresh
                     </button>
                 </div>
                 <div class="four wide column">
-                    <CurrentBestPrice :price="data.prices[0]"/>
+                    <CurrentBestPrice :inaraLink="data.prices.inaraLink" :price="data.prices.prices[0]"/>
                 </div>
             </div>
         </div>
         <AlertVeryLow v-if="isVeryLowDemand"/>
         <AlertLow v-else-if="isLowDemand"/>
-        <PriceList :prices="data.prices" :cargo="cargo" />
+        <PriceList :prices="data.prices.prices" :cargo="cargo" />
         <div class="ui section divider"></div>
     </div>
 </template>
@@ -50,8 +50,8 @@ export default {
     },
     data() {
         return {
-            data: {prices: [], stocks: []},
-            hours: 30,
+            data: {prices: {inaraLink: null, prices: []}, stocks: {prices: []}},
+            hours: 72,
             skip: true,
             market_id: null,
         }
@@ -62,23 +62,25 @@ export default {
             query: gql`
                 query commodityData($id: ID!, $hours: Int!, $mid: ID) {
                     commodityPrices(commodity_id: $id, market_id: $mid) {
-                        price
-                        demand
-                        date
-                        reports
-                        market {
-                            system
-                            station
-                            id
-                        }
-                        commodity {
-                            inaraLink
+                        inaraLink
+                        prices {
+                            price
+                            demand
+                            date
+                            reports
+                            market {
+                                system
+                                station
+                                id
+                            }
                         }
                     }
                     commodityPricesChart(commodity_id: $id, market_id: $mid, limit: $hours) {
-                        price
-                        demand
-                        date
+                        prices {
+                            price
+                            demand
+                            date
+                        }
                     }
                 }
             `,
@@ -103,12 +105,12 @@ export default {
     },
     computed: {
         isLowDemand() {
-            if (this.data.prices.length < 1) return false
-            return this.data.prices[0].demand <= 1000 && !isFleetCarrier(this.data.prices[0].market.id)
+            if (this.data.prices.prices.length < 1) return false
+            return this.data.prices.prices[0].demand <= 1000 && !isFleetCarrier(this.data.prices.prices[0].market.id)
         },
         isVeryLowDemand() {
-            if (this.data.prices.length < 1) return false
-            return this.data.prices[0].demand <= 200 && !isFleetCarrier(this.data.prices[0].market.id)
+            if (this.data.prices.prices.length < 1) return false
+            return this.data.prices.prices[0].demand <= 200 && !isFleetCarrier(this.data.prices.prices[0].market.id)
         }
     },
     mounted() {

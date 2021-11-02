@@ -39,17 +39,20 @@
                 :key="item.id"
                 v-show="item.name.toLowerCase().includes(search.toLowerCase())"
             />
+            <Reports :id="null"/>
         </main>
     </div>
 </template>
 
 <script>
 import Commodity from './components/Commodity.vue'
+import Reports from './components/Reports.vue'
 
 export default {
     name: 'App',
     components: {
-        Commodity
+        Commodity,
+        Reports,
     },
     data() {
         return {
@@ -94,5 +97,9 @@ header {
     background-position: 90% center;
     background-repeat: no-repeat;
     padding: 1px 50px;
+}
+
+main {
+    margin-bottom: 50px;
 }
 </style>
