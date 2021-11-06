@@ -1,8 +1,8 @@
 type Query {
-  commodityPricesChart(commodity_id: ID!, market_id: ID, limit: Int = 30): Commodity!
-  commodityPrices(commodity_id: ID!, market_id: ID, timestamp: Int, limit: Int = 10): Commodity!
+  commodityPricesChart(commodity_id: ID!, market_id: ID, hours: Int = 72, filter_carrier: Boolean = false): Commodity!
+  commodityPrices(commodity_id: ID!, market_id: ID, hours: Int = 96, limit: Int = 10, filter_carrier: Boolean = false): Commodity!
 
-  reports(commodity_id: ID, timestamp: Int, limit: Int = 30): [Report!]
+  reports(commodity_id: ID, hours: Int = 96, limit: Int = 30): [Report!]
 
   markets(limit: Int = 10): [Market!]!
   market(id:ID!): Market!

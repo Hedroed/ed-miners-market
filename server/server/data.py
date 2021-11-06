@@ -2,9 +2,10 @@ from .models import Base, Market, CommodityMaxPrice
 
 import csv
 import time
+from datetime import datetime
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker, aliased
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 
 
 ONE_DAY_SECOND = 24 * 60 * 60
@@ -45,8 +46,8 @@ class DataManager():
     def get_session(self):
         return self.session_factory()
 
-    def get_commodity_prices(self, commodity_id, timestamp=None, limit=10) -> "Commodity":
-        timestamp = timestamp or (int(time.time()) - ONE_DAY_SECOND)
+    def get_commodity_prices(self, commodity_id, hours=96, limit=10, filter_carrier=False) -> "Commodity":
+        timestamp = int(time.time()) - (3600 * hours)
 
         session = self.get_session()
 
@@ -69,8 +70,16 @@ class DataManager():
             func.max(CommodityMaxPrice.timestamp).label("max_timestamp")
         ).filter(
             CommodityMaxPrice.commodity_id == commodity_id,
+            (CommodityMaxPrice.reports * 10 - func.timestampdiff(text('HOUR'), func.from_unixtime(CommodityMaxPrice.timestamp), datetime.now()) >= 0),
             CommodityMaxPrice.timestamp > timestamp
-        ).group_by(
+        )
+
+        if filter_carrier:
+            last_updated = last_updated.filter(
+                CommodityMaxPrice.market_id < 3700000000
+            )
+
+        last_updated = last_updated.group_by(
             CommodityMaxPrice.commodity_id,
             CommodityMaxPrice.market_id
         ).subquery()
@@ -99,8 +108,8 @@ class DataManager():
             ],
         }
 
-    def get_commodity_prices_by_market(self, commodity_id, market_id, timestamp=None, limit=10) -> "Commodity":
-        timestamp = timestamp or (int(time.time()) - ONE_DAY_SECOND)
+    def get_commodity_prices_by_market(self, commodity_id, market_id, hours=96, limit=10, filter_carrier=False) -> "Commodity":
+        timestamp = int(time.time()) - (3600 * hours)
 
         session = self.get_session()
 
@@ -110,8 +119,16 @@ class DataManager():
         ).filter(
             CommodityMaxPrice.commodity_id == commodity_id,
             CommodityMaxPrice.market_id == market_id,
+            (CommodityMaxPrice.reports * 10 - func.timestampdiff(text('HOUR'), func.from_unixtime(CommodityMaxPrice.timestamp), datetime.now()) >= 0),
             CommodityMaxPrice.timestamp > timestamp,
-        ).group_by(
+        )
+
+        if filter_carrier:
+            last_updated = last_updated.filter(
+                CommodityMaxPrice.market_id < 3700000000
+            )
+
+        last_updated = last_updated.group_by(
             CommodityMaxPrice.commodity_id,
         ).subquery()
 
@@ -139,7 +156,9 @@ class DataManager():
             ],
         }
 
-    def get_commodity_chart(self, commodity_id, market_id=None, limit=30) -> "Commodity":
+    def get_commodity_chart(self, commodity_id, market_id=None, hours=72, filter_carrier=False) -> "Commodity":
+        timestamp = int(time.time()) - (3600 * hours)
+
         session = self.get_session()
 
         """
@@ -173,18 +192,30 @@ class DataManager():
             query = session.query(CommodityMaxPrice).filter(CommodityMaxPrice.commodity_id == commodity_id,
                                                             CommodityMaxPrice.market_id == market_id)
 
+            if filter_carrier:
+                query = query.filter(
+                    CommodityMaxPrice.market_id < 3700000000
+                )
+
         else:
-            best_market_per_timestamp = session.query(
+            sub_query = session.query(
                 CommodityMaxPrice,
                 func.row_number().over(
                     partition_by=CommodityMaxPrice.timestamp,
                     order_by=(CommodityMaxPrice.sell_price.desc(), CommodityMaxPrice.sell_demand.desc())
                 ).label("num")
-            ).filter_by(commodity_id=commodity_id).subquery()
+            ).filter(CommodityMaxPrice.commodity_id == commodity_id, CommodityMaxPrice.timestamp > timestamp)
+
+            if filter_carrier:
+                sub_query = sub_query.filter(
+                    CommodityMaxPrice.market_id < 3700000000
+                )
+
+            best_market_per_timestamp = sub_query.subquery()
 
             query = session.query(CommodityMaxPrice).select_entity_from(best_market_per_timestamp).filter(best_market_per_timestamp.c.num <= 1)
 
-        res = query.order_by(CommodityMaxPrice.timestamp.desc()).limit(limit).all()
+        res = query.order_by(CommodityMaxPrice.timestamp.desc()).limit(hours).all()
 
         return {
             "id": commodity_id,

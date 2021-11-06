@@ -18,6 +18,25 @@ import 'semantic-ui-css/components/message.min.css'
 import 'semantic-ui-css/components/statistic.min.css'
 import 'semantic-ui-css/components/input.min.css'
 import 'semantic-ui-css/components/divider.min.css'
+import 'semantic-ui-css/components/checkbox.min.css'
+import 'semantic-ui-css/components/label.min.css'
+
+import {
+    // enable as enableDarkMode,
+    // disable as disableDarkMode,
+    auto as darkreaderAuto,
+    setFetchMethod
+} from 'darkreader'
+
+setFetchMethod(window.fetch)
+
+// enableDarkMode()
+// disableDarkMode()
+
+darkreaderAuto({
+    brightness: 90,
+    contrast: 100,
+})
 
 import App from './App.vue'
 
@@ -28,8 +47,7 @@ Vue.config.productionTip = false
 Vue.prototype.moment = moment
 
 const apolloClient = new ApolloClient({
-    // uri: 'http://localhost:4000/graphql/'
-    uri: 'https://api.edmm.nathanryd.in/graphql/',
+    uri: process.env.VUE_APP_API_URL,
 })
 
 const apolloProvider = new VueApollo({

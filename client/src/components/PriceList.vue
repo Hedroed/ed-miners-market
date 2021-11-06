@@ -1,6 +1,8 @@
 <template>
     <div>
-        <h3 class="ui center aligned attached header">Top 10 galaxie prices</h3>
+        <div class="ui attached segment">
+            <h3 class="ui center aligned header">Top 10 galaxie prices</h3>
+        </div>
         <div class="responsive">
             <table
                 class="prices-table borderless ui selectable unstackable celled striped bottom attached table"
@@ -30,9 +32,9 @@
                 </thead>
                 <tbody>
                     <tr v-for="item in topPrices" :key="item.market.id">
-                        <td class="clipboard" v-clipboard:copy="item.market.system">
-                            <span>{{ item.market.system }}</span>
-                            <i title="Click to copy" class="copy outline icon" aria-hidden="true"></i>
+                        <td>
+                            <span><a class="system-link" :href="`https://inara.cz/market/?ps1=${item.market.system}&ps2=Alcor`" target="_blank" noreferer noopener>{{ item.market.system }}</a></span>
+                            <CopyButton :value="item.market.system"/>
                         </td>
                         <td>
                             <span :title="item.market.id">{{ item.market.station }}</span>
@@ -66,11 +68,15 @@
 <script>
 import _ from 'lodash/collection'
 import moment from 'moment'
+import CopyButton from './CopyButton.vue'
 
 import {isFleetCarrier} from '../utils'
 
 export default {
     name: 'PriceList',
+    components: {
+        CopyButton,
+    },
     props: {
         prices: {
             type: Array
@@ -84,7 +90,8 @@ export default {
             sortOrder: {
                 sortField: 'price',
                 direction: 'desc'
-            }
+            },
+            copied: true,
         }
     },
     computed: {
@@ -179,9 +186,6 @@ export default {
 </script>
 
 <style scoped>
-.clipboard {
-    cursor: pointer;
-}
 .icon {
     float: right;
 }
@@ -190,7 +194,6 @@ export default {
     padding: 0 1px;
     border: 1px solid #d4d4d5;
     margin: 0 -1px;
-    border-radius: 0 0 0.28571429rem 0.28571429rem;
     border-top: 0;
 }
 .borderless {
@@ -210,4 +213,13 @@ export default {
 .date-old {
     color: #611;
 }
+
+.system-link {
+    color: inherit;
+}
+
+.system-link:hover {
+    text-decoration: underline;
+}
+
 </style>

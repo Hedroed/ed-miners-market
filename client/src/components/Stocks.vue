@@ -102,15 +102,15 @@ export default {
                     {
                         fill: false,
                         label: 'Price',
-                        backgroundColor: '#f2711c',
-                        borderColor: '#f2711c',
+                        backgroundColor: '#f5821f',
+                        borderColor: '#f5821f',
                         data: all_data.map(d => d.price),
                         yAxisID: 'y-axis-1'
                     },
                     {
                         type: 'bar',
                         label: 'Demand',
-                        backgroundColor: '#f7e497',
+                        backgroundColor: '#f7e99c',
                         data: all_data.map(d => d.demand),
                         yAxisID: 'y-axis-2'
                     }

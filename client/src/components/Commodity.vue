@@ -3,24 +3,61 @@
         <div class="spinner" v-show="$apollo.loading">
             <EDSpinner/>
         </div>
-        <h2 class="ui top center aligned attached header">{{name}}</h2>
-        <div class="ui attached segment">
-            <div class="ui mobile reversed stackable grid">
-                <div class="twelve wide column">
-                    <Stocks v-if="!$apollo.loading" :stocks="data.stocks.prices" />
-                    <button class="mini ui basic button reload-icon" @click="$apollo.queries.data.refetch()">
-                        <i class="redo alternate icon"></i>
-                        Refresh
-                    </button>
-                </div>
-                <div class="four wide column">
-                    <CurrentBestPrice :inaraLink="data.prices.inaraLink" :price="data.prices.prices[0]"/>
+        <div class="ui segments">
+            <div class="ui segment">
+                <h2 class="ui center aligned header">{{name}}</h2>
+            </div>
+            <div class="ui segment">
+                <div class="ui mobile reversed stackable grid">
+                    <div class="twelve wide column">
+                        <Stocks v-if="!$apollo.loading" :stocks="data.stocks.prices" />
+                        <!-- <button class="mini ui basic button reload-icon" @click="$apollo.queries.data.refetch()">
+                            <i class="redo alternate icon"></i>
+                            Refresh
+                        </button> -->
+                        <div class="ui buttons">
+                            <button class="ui orange basic button" @click="$apollo.queries.data.refetch()">
+                                <i class="redo alternate icon"></i>
+                                Refresh
+                            </button>
+                            <button :class="['ui', 'basic', 'button', {'orange': filterFleetcarrier, 'grey': !filterFleetcarrier}]" @click="filterFleetcarrier = !filterFleetcarrier">
+                                <i v-if="filterFleetcarrier" class="check icon"></i>
+                                <i v-else class="times icon"></i>
+                                Filter FleetCarrier
+                            </button>
+                            <button :class="['ui', 'basic', 'button', {'orange': filterOld, 'grey': !filterOld}]" @click="filterOld = !filterOld">
+                                <i v-if="filterOld" class="check icon"></i>
+                                <i v-else class="times icon"></i>
+                                Only recent (&lt; 3h)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="four wide column">
+                        <CurrentBestPrice :inaraLink="data.prices.inaraLink" :price="data.prices.prices[0]"/>
+                    </div>
                 </div>
             </div>
+            <!-- <div class="ui horizontal compact segments">
+                <div class="ui segment">
+                    <h4 class="ui header">Filters:</h4>
+                </div>
+                <div class="ui segment">
+                    <button class="ui toggle button">
+                        <input type="checkbox" name="fleetcarrier" v-model="filterFleetcarrier" true-value="yes" false-value="no">
+                        <label>Filter FleetCarrier</label>
+                    </div>
+                </div>
+                <div class="ui segment">
+                    <div class="ui toggle checkbox" title="filter older than 2 hours">
+                        <input type="checkbox" name="old" v-model="filterOld" true-value="yes" false-value="no">
+                        <label>Only recent (&lt; 3h)</label>
+                    </div>
+                </div>
+            </div> -->
+            <PriceList :prices="data.prices.prices" :cargo="cargo" />
+            <AlertVeryLow v-if="isVeryLowDemand"/>
+            <AlertLow v-else-if="isLowDemand"/>
         </div>
-        <AlertVeryLow v-if="isVeryLowDemand"/>
-        <AlertLow v-else-if="isLowDemand"/>
-        <PriceList :prices="data.prices.prices" :cargo="cargo" />
         <div class="ui section divider"></div>
     </div>
 </template>
@@ -51,17 +88,18 @@ export default {
     data() {
         return {
             data: {prices: {inaraLink: null, prices: []}, stocks: {prices: []}},
-            hours: 72,
             skip: true,
             market_id: null,
+            filterFleetcarrier: false,
+            filterOld: false,
         }
     },
     apollo: {
         data: {
             // gql query
             query: gql`
-                query commodityData($id: ID!, $hours: Int!, $mid: ID) {
-                    commodityPrices(commodity_id: $id, market_id: $mid) {
+                query commodityData($id: ID!, $hours: Int!, $mid: ID, $filter_carrier: Boolean!) {
+                    commodityPrices(commodity_id: $id, market_id: $mid, hours: $hours, filter_carrier: $filter_carrier) {
                         inaraLink
                         prices {
                             price
@@ -75,7 +113,7 @@ export default {
                             }
                         }
                     }
-                    commodityPricesChart(commodity_id: $id, market_id: $mid, limit: $hours) {
+                    commodityPricesChart(commodity_id: $id, market_id: $mid, hours: 72, filter_carrier: $filter_carrier) {
                         prices {
                             price
                             demand
@@ -88,8 +126,9 @@ export default {
             variables() {
                 return {
                     id: this.id,
-                    hours: this.hours,
+                    hours: this.filterOld ? 3 : 72,
                     mid: this.market_id,
+                    filter_carrier: this.filterFleetcarrier
                 }
             },
             update: data => {
@@ -111,9 +150,10 @@ export default {
         isVeryLowDemand() {
             if (this.data.prices.prices.length < 1) return false
             return this.data.prices.prices[0].demand <= 200 && !isFleetCarrier(this.data.prices.prices[0].market.id)
-        }
+        },
     },
     mounted() {
+        window.appp = this.$apollo
         this.observer = new IntersectionObserver(entries => {
             const el = entries[0];
             if (el.isIntersecting) {
@@ -142,7 +182,7 @@ export default {
     justify-content: center;
     align-items: center;
 }
-.reload-icon {
+/* .reload-icon {
     margin-top: 10px;
-}
+} */
 </style>

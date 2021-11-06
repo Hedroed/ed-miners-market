@@ -28,7 +28,7 @@ async def resolve_query_prices_chart(
     :return: the list of all recipes
     :rtype: List[Dict[str, Any]]
     """
-    return manager.get_commodity_chart(args["commodity_id"], args.get("market_id", None), args["limit"])
+    return manager.get_commodity_chart(args["commodity_id"], args.get("market_id", None), hours=args["hours"], filter_carrier=args["filter_carrier"])
 
 
 @Resolver("Query.commodityPrices")
@@ -52,9 +52,9 @@ async def resolve_query_prices(
     :rtype: Optional[Dict[str, Any]]
     """
     if args.get("market_id", None):
-        return manager.get_commodity_prices_by_market(args["commodity_id"], args["market_id"], args.get("timestamp",None), args["limit"])
+        return manager.get_commodity_prices_by_market(args["commodity_id"], args["market_id"], hours=args["hours"], limit=args["limit"], filter_carrier=args["filter_carrier"])
 
-    return manager.get_commodity_prices(args["commodity_id"], args.get("timestamp",None), args["limit"])
+    return manager.get_commodity_prices(args["commodity_id"], hours=args["hours"], limit=args["limit"], filter_carrier=args["filter_carrier"])
 
 
 @Resolver("Query.reports")

@@ -20,7 +20,8 @@ services:
       # - 'dbdata:/usr/src/app/data'
     build: ./server
     environment:
-      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+      # - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+      - DB_PATH=mysql+pymysql://root:S7HFZX6506MCVBDuj@localhost:12345/edmm
     networks:
       - edmm
     ports:
